@@ -47,6 +47,7 @@ account cost "Project Cost" {
   account wFront "Web Front-End"
   account mFront "Mobile Front-end"
   account back "Back-End"
+  account cloud "Cloud Deployment"
 }
 account rev "Payments"
 # The Profit&Loss analysis should be rev - cost accounts.
@@ -68,6 +69,10 @@ resource dev2 "Samantha Müller" {
 resource dev3 "Peter Green" {
   email "kkk@unizar.es"
 }
+resource dev4 "Hugo Cornago" {
+  email "873840@unizar.es"
+  limits { dailymax 4h }
+}
 
 # Now we specify the work packages. The whole project is described as
 # a task that contains subtasks. These subtasks are then broken down
@@ -79,7 +84,7 @@ task WMGame "Web & Mobile Game" {
   # All work-related costs will be booked to this account unless the
   # subtasks specify something different.
   chargeset manag
-  
+
   # For the duration of the project we have running cost that are not
   # included in the labor cost.
   charge 60 perday
@@ -144,19 +149,85 @@ task WMGame "Web & Mobile Game" {
       effort 6d
       allocate dev1
       depends WMGame.twebF.tFEc
-    }    
+    }
+  }
+
+  task tmobileF "Mobile Front End" {
+    purge chargeset
+    chargeset mFront
+    responsible dev3
+    depends WMGame.tback.tBEd
+
+    task tmGUId "Mobile GUI Design" {
+      effort 8d
+      allocate dev3, dev4
+    }
+
+    task tmFEc "Mobile Front End Construction" {
+      effort 14d
+      allocate dev2, dev3, dev4
+      depends WMGame.tmobileF.tmGUId
+    }
+
+    task tmFEt "Mobile Front End Testing" {
+      effort 5d
+      allocate dev1, dev4
+      depends WMGame.tmobileF.tmFEc
+    }
+
+    task tmFEi "Mobile-Backend Integration" {
+      effort 6d
+      allocate dev1, dev3
+      depends WMGame.tmobileF.tmFEc
+      depends WMGame.tback.tbackDev
+    }
+  }
+
+  task tcloud "Cloud Deployment" {
+    purge chargeset
+    chargeset cloud
+    responsible dev1
+    depends WMGame.tback.tBEd
+
+    task tcEval "Cloud Provider Evaluation" {
+      effort 3d
+      allocate dev1, dev4
+    }
+
+    task tcInfra "Cloud Infrastructure Setup" {
+      effort 5d
+      allocate dev1, dev4
+      depends WMGame.tcloud.tcEval
+    }
+
+    task tcDeploy "Deployment Implementation" {
+      effort 7d
+      allocate dev1
+      depends WMGame.tcloud.tcInfra
+      depends WMGame.tback.tbackDev
+    }
+
+    task tcTest "Cloud Deployment Testing" {
+      effort 4d
+      allocate dev1, dev4
+      depends WMGame.tcloud.tcDeploy
+    }
   }
 
   task ttest "Acceptance tests" {
       effort 10d
       allocate boss
       allocate dev2
+      allocate dev4
       actual:effort 20d
       depends WMGame.twebF
       depends WMGame.tback
-      }
+      depends WMGame.tmobileF
+      depends WMGame.tcloud
+      minstart 2025-05-15
+  }
 
-    
+
   task deliveries "Milestones" {
 
     # Some milestones have customer payments associated with them. We
@@ -170,7 +241,7 @@ task WMGame "Web & Mobile Game" {
       # Here we use the built-in macro ${projectstart} to align the
       # start of the task with the above specified project time frame.
       start ${projectstart}
-  
+
       # At the beginning of this task we receive a payment from the
       # customer. This is credited to the account associated with this
       # task when the task starts.
@@ -223,7 +294,7 @@ textreport frame "" {
     formats html
     center '<[report id="overview"]>'
   }
-  
+
   textreport "Status" {
     formats html
     center -8<-
@@ -251,6 +322,12 @@ textreport frame "" {
     formats html
     title "Resource Graph"
     center '<[report id="resourceGraph"]>'
+  }
+
+  textreport "InitialPlan" {
+    formats html
+    title "Initial Project Plan"
+    center '<[report id="initialPlan"]>'
   }
 }
 
@@ -351,4 +428,18 @@ resourcereport resourceGraph "" {
   # We only like to show leaf tasks for leaf resources.
   hidetask ~(isleaf() & isleaf_())
   sorttasks plan.start.up
+}
+
+# Report showing the initial planned schedule
+taskreport initialPlan "" {
+  scenarios plan
+  headline "Initial Project Plan"
+  columns bsi { title 'WBS' },
+          name, start, end, effort, cost,
+          revenue, chart { ${TaskTip} }
+  timeformat "%a %Y-%m-%d"
+  loadunit days
+  hideresource @all
+  balance cost rev
+  caption 'All effort values are in man days - Initial Plan.'
 }
