@@ -1,9 +1,10 @@
 /*
- * This file contains the practice 5 source code corresponding with the 
+ * This file contains the practice 5 source code corresponding with the
  * project planification using TaskJuggler in the "Proyecto Software" course.
- * It is based on the Tutorial project offered by TaskJuggler and maintains 
- * some elements of it
+ * It is based on the Tutorial project offered by TaskJuggler and maintains
+ * some elements of it.
  */
+
 
 project pSix "Web Game"  2024-12-15 +5m {
   # Set the default time zone for the project. If not specified, UTC
@@ -97,7 +98,7 @@ task WMGame "Web & Mobile Game" {
   }
 
   task tback "Back End" {
-    # It is necessary to “purge” the “chargeset” because it has been assigned previously to other variable 
+    # It is necessary to “purge” the “chargeset” because it has been assigned previously to other variable
     purge chargeset
     chargeset back
     responsible dev1
